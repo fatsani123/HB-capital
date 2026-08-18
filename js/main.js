@@ -24,11 +24,24 @@ if (payMethods.length) {
   });
 }
 
-// Registration form -> pre-filled email to admin (MVP until a real backend exists)
+// Supabase client (only initializes if supabase-config.js has real values filled in)
+let supabaseClient = null;
+if (
+  window.supabase &&
+  window.SUPABASE_URL &&
+  window.SUPABASE_ANON_KEY &&
+  window.SUPABASE_URL.startsWith('http') &&
+  !window.SUPABASE_URL.includes('PASTE_YOUR')
+) {
+  supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+}
+
+// Registration form -> saves to Supabase (if configured) + opens a pre-filled email to admin
 const registerForm = document.getElementById('registerForm');
 if (registerForm) {
-  registerForm.addEventListener('submit', (e) => {
+  registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+
     const fullName = document.getElementById('fullName').value;
     const phone = document.getElementById('phone').value;
     const email = document.getElementById('email').value;
@@ -36,7 +49,28 @@ if (registerForm) {
     const plan = planEl ? planEl.value : 'Not specified';
     const payEl = document.querySelector('input[name="payMethod"]:checked');
     const payMethod = payEl ? payEl.value : 'Not selected';
-    const reference = document.getElementById('reference').value || 'Not provided yet';
+    const reference = document.getElementById('reference').value || '';
+
+    const submitBtn = registerForm.querySelector('.form-submit');
+    const originalBtnText = submitBtn.textContent;
+    submitBtn.textContent = 'Submitting...';
+    submitBtn.disabled = true;
+
+    if (supabaseClient) {
+      try {
+        const { error } = await supabaseClient.from('mentorship_registrations').insert([{
+          full_name: fullName,
+          phone: phone,
+          email: email,
+          package: plan,
+          payment_method: payMethod,
+          payment_reference: reference || null
+        }]);
+        if (error) console.error('Supabase insert error:', error);
+      } catch (err) {
+        console.error('Supabase insert failed:', err);
+      }
+    }
 
     const subject = encodeURIComponent('HB Capital Registration — ' + fullName);
     const body = encodeURIComponent(
@@ -46,8 +80,11 @@ if (registerForm) {
       'Email: ' + email + '\n' +
       'Package: ' + plan + '\n' +
       'Payment Method: ' + payMethod + '\n' +
-      'Payment Reference: ' + reference + '\n'
+      'Payment Reference: ' + (reference || 'Not provided yet') + '\n'
     );
+
+    submitBtn.textContent = originalBtnText;
+    submitBtn.disabled = false;
 
     window.location.href = 'mailto:trader@hbcapital.com?subject=' + subject + '&body=' + body;
   });
