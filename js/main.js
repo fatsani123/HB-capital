@@ -10,15 +10,16 @@ const io = new IntersectionObserver((entries) => {
 }, { threshold: 0.15 });
 revealEls.forEach(el => io.observe(el));
 
-// Payment method tabs
-const payTabs = document.querySelectorAll('.pay-tab-btn');
-if (payTabs.length) {
-  payTabs.forEach(btn => {
-    btn.addEventListener('click', () => {
-      payTabs.forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.pay-detail').forEach(d => d.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('pay-' + btn.dataset.pay).classList.add('active');
+// Payment method picker
+const payMethods = document.querySelectorAll('input[name="payMethod"]');
+if (payMethods.length) {
+  payMethods.forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.querySelectorAll('.pay-detail-panel').forEach(p => p.classList.remove('active'));
+      const target = document.getElementById(radio.dataset.target);
+      if (target) target.classList.add('active');
+      const nextSteps = document.getElementById('payNextSteps');
+      if (nextSteps) nextSteps.classList.add('active');
     });
   });
 }
@@ -33,7 +34,8 @@ if (registerForm) {
     const email = document.getElementById('email').value;
     const planEl = document.querySelector('input[name="plan"]:checked');
     const plan = planEl ? planEl.value : 'Not specified';
-    const payMethod = document.querySelector('.pay-tab-btn.active').textContent.trim();
+    const payEl = document.querySelector('input[name="payMethod"]:checked');
+    const payMethod = payEl ? payEl.value : 'Not selected';
     const reference = document.getElementById('reference').value || 'Not provided yet';
 
     const subject = encodeURIComponent('HB Capital Registration — ' + fullName);

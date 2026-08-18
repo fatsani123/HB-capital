@@ -264,15 +264,76 @@
 
         <div class="form-group">
           <label class="form-label">Payment Method</label>
-          <div class="pay-tabs">
-            <button type="button" class="pay-tab-btn active" data-pay="bank">Bank Transfer</button>
-            <button type="button" class="pay-tab-btn" data-pay="mobile">Mobile Money</button>
+          <div class="pay-methods-grid">
+            <div class="pay-method">
+              <input type="radio" name="payMethod" id="pm-nb" value="National Bank" data-target="detail-nb">
+              <label for="pm-nb"><span class="pay-icon">NB</span><span class="pay-method-name">National Bank</span></label>
+            </div>
+            <div class="pay-method">
+              <input type="radio" name="payMethod" id="pm-sb" value="Standard Bank" data-target="detail-sb">
+              <label for="pm-sb"><span class="pay-icon">SB</span><span class="pay-method-name">Standard Bank</span></label>
+            </div>
+            <div class="pay-method">
+              <input type="radio" name="payMethod" id="pm-fdh" value="FDH Bank" data-target="detail-fdh">
+              <label for="pm-fdh"><span class="pay-icon">FDH</span><span class="pay-method-name">FDH Bank</span></label>
+            </div>
+            <div class="pay-method">
+              <input type="radio" name="payMethod" id="pm-nbs" value="NBS Bank" data-target="detail-nbs">
+              <label for="pm-nbs"><span class="pay-icon">NBS</span><span class="pay-method-name">NBS Bank</span></label>
+            </div>
+            <div class="pay-method">
+              <input type="radio" name="payMethod" id="pm-mpamba" value="TNM Mpamba" data-target="detail-mpamba">
+              <label for="pm-mpamba"><span class="pay-icon">TNM</span><span class="pay-method-name">Mpamba</span></label>
+            </div>
+            <div class="pay-method">
+              <input type="radio" name="payMethod" id="pm-airtel" value="Airtel Money" data-target="detail-airtel">
+              <label for="pm-airtel"><span class="pay-icon">AM</span><span class="pay-method-name">Airtel Money</span></label>
+            </div>
           </div>
-          <div class="pay-detail active" id="pay-bank">
-            <span class="pay-placeholder">Bank name, account name, and account number to be added here.</span>
+
+          <div class="pay-details">
+            <div class="pay-detail-panel" id="detail-nb">
+              <div class="pd-row"><span class="pd-label">Bank</span><span class="pd-value">National Bank</span></div>
+              <div class="pd-row"><span class="pd-label">Account Name</span><span class="pd-value">Fatsani Nkhono</span></div>
+              <div class="pd-row"><span class="pd-label">Account Number</span><span class="pd-value">1008862498</span></div>
+              <div class="pd-row"><span class="pd-label">Branch</span><span class="pd-value">Chichiri Branch</span></div>
+              <div class="pd-row"><span class="pd-label">Contact</span><span class="pd-value">0883 558 887</span></div>
+            </div>
+            <div class="pay-detail-panel" id="detail-sb">
+              <div class="pd-row"><span class="pd-label">Bank</span><span class="pd-value">Standard Bank</span></div>
+              <div class="pd-row"><span class="pd-label">Account Name</span><span class="pd-value">Fatsani Nkhono</span></div>
+              <div class="pd-row"><span class="pd-label">Account Number</span><span class="pd-value">9100004212638</span></div>
+              <div class="pd-row"><span class="pd-label">Branch</span><span class="pd-value">Chichiri Branch</span></div>
+              <div class="pd-row"><span class="pd-label">Contact</span><span class="pd-value">0883 558 887</span></div>
+            </div>
+            <div class="pay-detail-panel" id="detail-fdh">
+              <div class="pd-row"><span class="pd-label">Bank</span><span class="pd-value">FDH Bank</span></div>
+              <div class="pd-row"><span class="pd-label">Account Name</span><span class="pd-value">Fatsani Nkhono</span></div>
+              <div class="pd-row"><span class="pd-label">Account Number</span><span class="pd-value">1970000442804</span></div>
+              <div class="pd-row"><span class="pd-label">Branch</span><span class="pd-value">Lilongwe Branch</span></div>
+              <div class="pd-row"><span class="pd-label">Contact</span><span class="pd-value">0883 558 887</span></div>
+            </div>
+            <div class="pay-detail-panel" id="detail-nbs">
+              <div class="pd-row"><span class="pd-label">Bank</span><span class="pd-value">NBS Bank</span></div>
+              <div class="pd-row"><span class="pd-label">Account Name</span><span class="pd-value">Fatsani Nkhono</span></div>
+              <div class="pd-row"><span class="pd-label">Account Number</span><span class="pd-value">25084053</span></div>
+              <div class="pd-row"><span class="pd-label">Branch</span><span class="pd-value">City Center Branch</span></div>
+              <div class="pd-row"><span class="pd-label">Contact</span><span class="pd-value">0883 558 887</span></div>
+            </div>
+            <div class="pay-detail-panel" id="detail-mpamba">
+              <div class="pd-row"><span class="pd-label">Service</span><span class="pd-value">TNM Mpamba</span></div>
+              <div class="pd-row"><span class="pd-label">Number</span><span class="pd-value">0883 558 887</span></div>
+              <div class="pay-fee-note">Please add the withdrawal fee to your payment.</div>
+            </div>
+            <div class="pay-detail-panel" id="detail-airtel">
+              <div class="pd-row"><span class="pd-label">Service</span><span class="pd-value">Airtel Money</span></div>
+              <div class="pd-row"><span class="pd-label">Number</span><span class="pd-value">0985 508 448</span></div>
+              <div class="pay-fee-note">Please add the withdrawal fee to your payment.</div>
+            </div>
           </div>
-          <div class="pay-detail" id="pay-mobile">
-            <span class="pay-placeholder">Airtel Money / TNM Mpamba number to be added here.</span>
+
+          <div class="pay-next-steps" id="payNextSteps">
+            Once you've sent payment, message <strong>Trader Fatsa</strong> on WhatsApp (<strong>0883 558 887</strong>) or via social media <strong>@TraderFatsa</strong> with your reference number — your plan will be confirmed and activated from there.
           </div>
         </div>
 
