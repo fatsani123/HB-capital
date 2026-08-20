@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — HB Capital</title>
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<nav class="dash-topbar">
+  <div class="dash-topbar-inner">
+    <a href="index.html" class="nav-logo">HB <span>Capital</span> <span style="font-size:10px;color:#B8791E;background:rgba(219,158,36,0.12);padding:2px 8px;border-radius:100px;margin-left:6px;vertical-align:middle;">ADMIN</span></a>
+    <div class="dash-user">Signed in as <strong id="userEmail">...</strong></div>
+    <button class="dash-signout" onclick="signOut()">Sign Out</button>
+  </div>
+</nav>
+
+<div class="dash-shell wrap">
+  <div class="dash-header">
+    <div class="dash-eyebrow">Client Management</div>
+    <div class="dash-h1">All Enrollments</div>
+  </div>
+
+  <div class="dash-card glass prism-ring" style="margin-bottom:28px;">
+    <div class="admin-table-wrap">
+      <table class="admin-table" id="enrollmentsTable">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Plan</th>
+            <th>Status</th>
+            <th>Expires</th>
+            <th>Registered</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="enrollmentsBody"></tbody>
+      </table>
+      <div class="admin-empty" id="enrollmentsEmpty" style="display:none;">No registrations yet.</div>
+    </div>
+  </div>
+
+  <div class="dash-card glass prism-ring" id="clientDetailCard" style="display:none;">
+    <div class="dash-card-label" id="clientDetailLabel">Client Cluster Progress</div>
+    <div class="cluster-list" id="clientClusterList" style="margin-top:16px;"></div>
+  </div>
+
+  <div class="dash-card glass prism-ring" style="margin-top:28px;">
+    <div class="dash-card-label">Manage Cluster Resources</div>
+    <div class="form-row" style="margin-top:16px;">
+      <div class="form-group">
+        <label class="form-label" for="resourceCluster">Cluster</label>
+        <select class="form-select" id="resourceCluster"></select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="resourceTitle">Title</label>
+      <input class="form-input" type="text" id="resourceTitle" placeholder="e.g. Cluster 1 Slides (PDF)">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="resourceDesc">Description (optional)</label>
+      <input class="form-input" type="text" id="resourceDesc" placeholder="Short note about this resource">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="resourceUrl">Link</label>
+      <input class="form-input" type="text" id="resourceUrl" placeholder="https://...">
+    </div>
+    <button class="admin-action-btn" style="padding:12px 22px;font-size:12.5px;" onclick="addResource()">Add Resource</button>
+
+    <div id="resourceListWrap" style="margin-top:24px;"></div>
+  </div>
+</div>
+
+<!-- Approve enrollment modal -->
+<div class="modal-overlay" id="approveModal">
+  <div class="modal-box">
+    <div class="modal-title">Approve Enrollment</div>
+    <div class="modal-sub" id="approveModalSub">Set an expiry date for this client's program access.</div>
+    <div class="form-group">
+      <label class="form-label" for="expiryInput">Program Expires On</label>
+      <input class="form-input" type="date" id="expiryInput">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeApproveModal()">Cancel</button>
+      <button class="form-submit" onclick="confirmApproveEnrollment()">Approve</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  let activeEnrollmentId = null;
+
+  function fmtStatus(s) {
+    return s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+  function fmtDate(d) {
+    return d ? new Date(d).toLocaleDateString() : '—';
+  }
+
+  function openApproveModal(enrollmentId) {
+    activeEnrollmentId = enrollmentId;
+    document.getElementById('expiryInput').value = '';
+    document.getElementById('approveModal').classList.add('active');
+  }
+  function closeApproveModal() {
+    document.getElementById('approveModal').classList.remove('active');
+  }
+
+  async function confirmApproveEnrollment() {
+    const client = getSupabaseClient();
+    const expiry = document.getElementById('expiryInput').value;
+    if (!expiry) { alert('Please set an expiry date.'); return; }
+
+    const { error } = await client.rpc('admin_approve_enrollment', {
+      p_enrollment_id: activeEnrollmentId,
+      p_expires_at: expiry
+    });
+
+    if (error) { alert('Error: ' + error.message); return; }
+    closeApproveModal();
+    loadEnrollments();
+  }
+
+  async function approveCluster(userId, clusterId) {
+    const client = getSupabaseClient();
+    const { error } = await client.rpc('admin_approve_cluster', { p_user_id: userId, p_cluster_id: clusterId });
+    if (error) { alert('Error: ' + error.message); return; }
+    showClientDetail(userId);
+  }
+
+  async function completeCluster(userId, clusterId) {
+    const client = getSupabaseClient();
+    const { error } = await client.rpc('admin_complete_cluster', { p_user_id: userId, p_cluster_id: clusterId });
+    if (error) { alert('Error: ' + error.message); return; }
+    showClientDetail(userId);
+  }
+
+  async function showClientDetail(userId) {
+    const client = getSupabaseClient();
+    document.getElementById('clientDetailCard').style.display = 'block';
+
+    const { data: profile } = await client.from('profiles').select('*').eq('id', userId).maybeSingle();
+    document.getElementById('clientDetailLabel').textContent =
+      'Cluster Progress — ' + (profile && profile.full_name ? profile.full_name : userId);
+
+    const { data: progress } = await client
+      .from('client_clusters')
+      .select('*, clusters(name, level, price_mwk, sort_order)')
+      .eq('user_id', userId)
+      .order('cluster_id', { ascending: true });
+
+    const listEl = document.getElementById('clientClusterList');
+    listEl.innerHTML = '';
+
+    (progress || []).forEach(row => {
+      const c = row.clusters;
+      const div = document.createElement('div');
+      div.className = 'cluster-row';
+
+      let actionHtml = '';
+      if (row.status === 'submitted') {
+        actionHtml = `<button class="admin-action-btn" onclick="approveCluster('${userId}', ${row.cluster_id})">Approve Payment</button>`;
+      } else if (row.status === 'approved') {
+        actionHtml = `<button class="admin-action-btn secondary" onclick="completeCluster('${userId}', ${row.cluster_id})">Mark Completed</button>`;
+      }
+
+      const refHtml = row.payment_reference
+        ? `<div class="admin-sub">${row.payment_method || ''} · Ref: ${row.payment_reference}</div>`
+        : '';
+
+      div.innerHTML = `
+        <div class="cluster-row-left">
+          <div class="cluster-index">${c.sort_order}</div>
+          <div>
+            <div class="cluster-name">${c.name}</div>
+            <div class="cluster-level">${c.level} · MWK ${c.price_mwk.toLocaleString()}</div>
+            ${refHtml}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span class="status-badge status-${row.status}">${fmtStatus(row.status)}</span>
+          ${actionHtml}
+        </div>
+      `;
+      listEl.appendChild(div);
+    });
+  }
+
+  async function loadEnrollments() {
+    const session = await requireAdmin();
+    if (!session) return;
+
+    document.getElementById('userEmail').textContent = session.user.email;
+
+    const client = getSupabaseClient();
+    const { data: enrollments } = await client
+      .from('enrollments')
+      .select('*, profiles(full_name, phone)')
+      .order('created_at', { ascending: false });
+
+    const body = document.getElementById('enrollmentsBody');
+    const empty = document.getElementById('enrollmentsEmpty');
+    body.innerHTML = '';
+
+    if (!enrollments || enrollments.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    enrollments.forEach(en => {
+      const profile = en.profiles || {};
+      const tr = document.createElement('tr');
+
+      let actionHtml = '';
+      if (en.status === 'pending') {
+        actionHtml = `<button class="admin-action-btn" onclick="openApproveModal('${en.id}')">Approve</button>`;
+      } else {
+        actionHtml = `<button class="admin-action-btn secondary" onclick="showClientDetail('${en.user_id}')">View Progress</button>`;
+      }
+
+      tr.innerHTML = `
+        <td>
+          <div class="admin-name">${profile.full_name || 'Unknown'}</div>
+          <div class="admin-sub">${profile.phone || ''}</div>
+        </td>
+        <td>${en.plan}</td>
+        <td><span class="status-badge status-${en.status}">${fmtStatus(en.status)}</span></td>
+        <td>${fmtDate(en.expires_at)}</td>
+        <td>${fmtDate(en.created_at)}</td>
+        <td>${actionHtml}</td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  async function loadClusterDropdown() {
+    const client = getSupabaseClient();
+    if (!client) return;
+    const { data: clusters } = await client.from('clusters').select('*').order('sort_order', { ascending: true });
+    const select = document.getElementById('resourceCluster');
+    select.innerHTML = (clusters || []).map(c =>
+      `<option value="${c.id}">${c.sort_order}. ${c.name} (${c.level})</option>`
+    ).join('');
+    if (select.value) loadResourcesForCluster(select.value);
+    select.addEventListener('change', () => loadResourcesForCluster(select.value));
+  }
+
+  async function loadResourcesForCluster(clusterId) {
+    const client = getSupabaseClient();
+    const { data: resources } = await client
+      .from('cluster_resources')
+      .select('*')
+      .eq('cluster_id', clusterId)
+      .order('sort_order', { ascending: true });
+
+    const wrap = document.getElementById('resourceListWrap');
+    if (!resources || resources.length === 0) {
+      wrap.innerHTML = '<div class="admin-sub">No resources added for this cluster yet.</div>';
+      return;
+    }
+
+    wrap.innerHTML = resources.map(r => `
+      <div class="cluster-row" style="margin-bottom:10px;">
+        <div class="cluster-row-left">
+          <div>
+            <div class="cluster-name">${r.title}</div>
+            <div class="admin-sub">${r.description || r.url}</div>
+          </div>
+        </div>
+        <button class="admin-action-btn secondary" onclick="deleteResource('${r.id}', ${clusterId})">Remove</button>
+      </div>
+    `).join('');
+  }
+
+  async function addResource() {
+    const client = getSupabaseClient();
+    const clusterId = document.getElementById('resourceCluster').value;
+    const title = document.getElementById('resourceTitle').value;
+    const description = document.getElementById('resourceDesc').value;
+    const url = document.getElementById('resourceUrl').value;
+
+    if (!title || !url) { alert('Please fill in at least a title and link.'); return; }
+
+    const { error } = await client.from('cluster_resources').insert([{
+      cluster_id: clusterId, title, description: description || null, url
+    }]);
+
+    if (error) { alert('Error: ' + error.message); return; }
+
+    document.getElementById('resourceTitle').value = '';
+    document.getElementById('resourceDesc').value = '';
+    document.getElementById('resourceUrl').value = '';
+    loadResourcesForCluster(clusterId);
+  }
+
+  async function deleteResource(id, clusterId) {
+    const client = getSupabaseClient();
+    const { error } = await client.from('cluster_resources').delete().eq('id', id);
+    if (error) { alert('Error: ' + error.message); return; }
+    loadResourcesForCluster(clusterId);
+  }
+
+  loadEnrollments();
+  loadClusterDropdown();
+</script>
+
+</body>
+</html>

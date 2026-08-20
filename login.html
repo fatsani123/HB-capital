@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — HB Capital</title>
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="auth-shell">
+  <div class="auth-panel glass prism-ring">
+    <div class="auth-logo">HB <span>Capital</span></div>
+    <div class="auth-title">Sign in to your dashboard</div>
+
+    <div class="auth-error" id="authError"></div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label class="form-label" for="email">Email</label>
+        <input class="form-input" type="email" id="email" required placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input class="form-input" type="password" id="password" required placeholder="Your password">
+      </div>
+      <button type="submit" class="form-submit" id="loginBtn">Sign In</button>
+    </form>
+
+    <div class="auth-switch">Not registered yet? <a href="index.html#join">Register for the program</a></div>
+  </div>
+</div>
+
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  redirectToCorrectDashboard();
+
+  const form = document.getElementById('loginForm');
+  const errorBox = document.getElementById('authError');
+  const btn = document.getElementById('loginBtn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const client = getSupabaseClient();
+    if (!client) {
+      errorBox.textContent = 'The site is not yet connected to its account system. Please contact Trader Fatsa.';
+      errorBox.classList.add('active');
+      return;
+    }
+
+    errorBox.classList.remove('active');
+    btn.textContent = 'Signing in...';
+    btn.disabled = true;
+
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
+
+    btn.textContent = 'Sign In';
+    btn.disabled = false;
+
+    if (error) {
+      errorBox.textContent = error.message;
+      errorBox.classList.add('active');
+      return;
+    }
+
+    window.location.href = (data.user.email === ADMIN_EMAIL) ? 'admin.html' : 'dashboard.html';
+  });
+</script>
+
+</body>
+</html>

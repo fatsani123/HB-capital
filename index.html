@@ -19,6 +19,7 @@
       <a href="#program">Program</a>
       <a href="#about">About</a>
       <a href="#pricing">Pricing</a>
+      <a href="login.html" id="navAuthLink">Sign In</a>
     </div>
     <a href="#join" class="nav-cta">Get Started</a>
   </div>
@@ -35,7 +36,7 @@
     </div>
     <div class="hero-perk">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#2456DB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="#2456DB" stroke-width="2"/></svg>
-      Every package includes free access to the HB Macro Intelligence dashboard
+      Every enrollment includes access to the HB Macro Intelligence dashboard
     </div>
 
     <div class="hero-visual">
@@ -196,11 +197,11 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 14l4-4 3 3 5-6" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
       <div class="dash-text">
-        <div class="dash-tag">Free with any package</div>
+        <div class="dash-tag">Included with enrollment</div>
         <h4>HB Macro Intelligence Dashboard</h4>
-        <p>Live forex, commodities, indices, and crypto sentiment — included free with every mentorship package, at any level.</p>
+        <p>Live forex, commodities, indices, and crypto sentiment — included with every active mentorship enrollment.</p>
       </div>
-      <a href="https://marketpulser01.vercel.app" target="_blank" rel="noopener" class="dash-link">Open Dashboard →</a>
+      <a href="#join" id="dashCalloutLink" class="dash-link">Get Access →</a>
     </div>
   </div>
 </section>
@@ -210,7 +211,7 @@
     <div class="join-panel glass prism-ring reveal">
       <div class="join-eyebrow">Get Started</div>
       <div class="join-title">Register for the program</div>
-      <div class="join-desc">Tell me a bit about yourself and choose a package. I'll follow up personally to confirm your plan and get you started.</div>
+      <div class="join-desc">Create your account, tell me a bit about yourself, and choose a package. I'll review your payment and activate your plan personally.</div>
 
       <form id="registerForm">
         <div class="form-row">
@@ -227,6 +228,17 @@
         <div class="form-group">
           <label class="form-label" for="email">Email</label>
           <input class="form-input" type="email" id="email" name="email" placeholder="you@example.com" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="password">Create Password</label>
+            <input class="form-input" type="password" id="password" name="password" placeholder="At least 6 characters" required minlength="6">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="confirmPassword">Confirm Password</label>
+            <input class="form-input" type="password" id="confirmPassword" name="confirmPassword" placeholder="Repeat password" required minlength="6">
+          </div>
         </div>
 
         <div class="form-group">
@@ -343,8 +355,8 @@
           <input class="form-input" type="text" id="reference" name="reference" placeholder="Optional — add once you've made payment">
         </div>
 
-        <button type="submit" class="form-submit">Submit Registration</button>
-        <div class="join-note">This sends your details directly to Trader Fatsa for confirmation. Once your plan is confirmed, your dashboard access will be activated.</div>
+        <button type="submit" class="form-submit">Create Account & Register</button>
+        <div class="join-note">This creates your HB Capital account and sends your registration for review. Once approved, sign in anytime to see your plan and dashboard access.</div>
       </form>
     </div>
   </div>
@@ -358,6 +370,7 @@
 </footer>
 
 <script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

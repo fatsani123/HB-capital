@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — HB Capital</title>
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<nav class="dash-topbar">
+  <div class="dash-topbar-inner">
+    <a href="index.html" class="nav-logo">HB <span>Capital</span></a>
+    <div class="dash-user">Signed in as <strong id="userEmail">...</strong></div>
+    <button class="dash-signout" onclick="signOut()">Sign Out</button>
+  </div>
+</nav>
+
+<div class="dash-shell wrap">
+  <div class="dash-header">
+    <div class="dash-eyebrow">Your Dashboard</div>
+    <div class="dash-h1" id="welcomeName">Welcome</div>
+  </div>
+
+  <div id="noEnrollmentNote" style="display:none;margin-bottom:32px;" class="join-panel glass prism-ring reveal">
+    <div class="join-desc" style="margin:0;">You haven't registered for the program yet. <a href="index.html#join" style="color:#2456DB;font-weight:700;">Register here</a> to get started.</div>
+  </div>
+
+  <div id="dashboardContent" style="display:none;">
+    <div class="dash-grid">
+      <div class="dash-card glass prism-ring">
+        <div class="dash-card-label">Current Plan</div>
+        <div class="dash-plan-name" id="planName">—</div>
+        <div class="dash-plan-meta" id="planMeta">—</div>
+        <div style="margin-top:16px;"><span class="status-badge" id="enrollmentStatus">—</span></div>
+
+        <a href="https://marketpulser01.vercel.app" target="_blank" rel="noopener" class="dash-analytics-btn" id="analyticsBtn">Open Analytics Dashboard →</a>
+        <div class="dash-locked-note" id="analyticsLockedNote" style="display:none;">Your enrollment needs to be approved before the analytics dashboard unlocks.</div>
+      </div>
+
+      <div class="dash-card glass prism-ring">
+        <div class="dash-card-label">Program Expiry</div>
+        <div class="dash-plan-name" id="expiryDate">—</div>
+        <div class="dash-plan-meta">The mentorship program runs for a fixed period once approved.</div>
+      </div>
+    </div>
+
+    <div class="dash-card glass prism-ring">
+      <div class="dash-card-label">Cluster Progress</div>
+      <div class="cluster-list" id="clusterList"></div>
+    </div>
+
+    <div class="dash-card glass prism-ring cert-card" id="certCard" style="margin-top:28px;">
+      <div class="dash-card-label">Certificate of Completion</div>
+      <div id="certLocked">
+        <div class="cert-progress-text" id="certProgressText">0 of 0 clusters completed</div>
+        <div class="cert-progress-bar"><div class="cert-progress-fill" id="certProgressFill" style="width:0%;"></div></div>
+        <div class="dash-locked-note">Your certificate unlocks once every cluster in your plan is marked completed.</div>
+      </div>
+      <div id="certUnlocked" style="display:none;">
+        <div class="cert-ready-text">🎉 You've completed the program! Your certificate is ready.</div>
+        <button class="dash-analytics-btn" style="border:none;cursor:pointer;" onclick="handleDownloadCertificate()">Download Certificate</button>
+      </div>
+    </div>
+
+    <div class="dash-card glass prism-ring" style="margin-top:28px;">
+      <div class="dash-card-label">Settings</div>
+      <form id="passwordForm" style="margin-top:16px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="newPassword">New Password</label>
+            <input class="form-input" type="password" id="newPassword" placeholder="At least 6 characters">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="confirmPassword">Confirm New Password</label>
+            <input class="form-input" type="password" id="confirmPassword" placeholder="Repeat password">
+          </div>
+        </div>
+        <button type="submit" class="btn-secondary" style="width:auto;padding:13px 26px;">Update Password</button>
+        <span id="passwordMsg" style="margin-left:14px;font-size:12.5px;color:#6B7690;"></span>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Payment submission modal -->
+<div class="modal-overlay" id="payModal">
+  <div class="modal-box">
+    <div class="modal-title" id="payModalTitle">Submit Payment</div>
+    <div class="modal-sub">Enter the details for the payment you've made for this cluster.</div>
+    <div class="form-group">
+      <label class="form-label" for="modalMethod">Payment Method</label>
+      <input class="form-input" type="text" id="modalMethod" placeholder="e.g. FDH Bank, TNM Mpamba">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="modalReference">Payment Reference / Transaction ID</label>
+      <input class="form-input" type="text" id="modalReference" placeholder="Your transaction reference">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="form-submit" onclick="submitClusterPayment()">Submit</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/certificate.js"></script>
+<script>
+  let currentUserId = null;
+  let activeClusterId = null;
+  let currentFullName = '';
+  let currentPlan = '';
+
+  function fmtStatus(s) {
+    return s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  function openModal(clusterId, clusterName) {
+    activeClusterId = clusterId;
+    document.getElementById('payModalTitle').textContent = 'Submit Payment — ' + clusterName;
+    document.getElementById('modalMethod').value = '';
+    document.getElementById('modalReference').value = '';
+    document.getElementById('payModal').classList.add('active');
+  }
+  function closeModal() {
+    document.getElementById('payModal').classList.remove('active');
+  }
+
+  async function submitClusterPayment() {
+    const client = getSupabaseClient();
+    const method = document.getElementById('modalMethod').value;
+    const reference = document.getElementById('modalReference').value;
+    if (!method || !reference) { alert('Please fill in both fields.'); return; }
+
+    const { error } = await client.rpc('submit_cluster_payment', {
+      p_cluster_id: activeClusterId,
+      p_method: method,
+      p_reference: reference
+    });
+
+    if (error) { alert('Something went wrong: ' + error.message); return; }
+    closeModal();
+    loadDashboard();
+  }
+
+  async function loadDashboard() {
+    const session = await requireAuth();
+    if (!session) return;
+    currentUserId = session.user.id;
+
+    document.getElementById('userEmail').textContent = session.user.email;
+
+    const client = getSupabaseClient();
+
+    const { data: profile } = await client.from('profiles').select('*').eq('id', currentUserId).maybeSingle();
+    document.getElementById('welcomeName').textContent = 'Welcome, ' + (profile && profile.full_name ? profile.full_name.split(' ')[0] : 'back');
+    currentFullName = (profile && profile.full_name) ? profile.full_name : session.user.email;
+
+    const { data: enrollment } = await client
+      .from('enrollments')
+      .select('*')
+      .eq('user_id', currentUserId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!enrollment) {
+      document.getElementById('noEnrollmentNote').style.display = 'block';
+      document.getElementById('dashboardContent').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('noEnrollmentNote').style.display = 'none';
+    document.getElementById('dashboardContent').style.display = 'block';
+
+    document.getElementById('planName').textContent = enrollment.plan;
+    document.getElementById('planMeta').textContent = 'Registered ' + new Date(enrollment.created_at).toLocaleDateString();
+    currentPlan = enrollment.plan;
+
+    const statusEl = document.getElementById('enrollmentStatus');
+    statusEl.textContent = fmtStatus(enrollment.status);
+    statusEl.className = 'status-badge status-' + enrollment.status;
+
+    document.getElementById('expiryDate').textContent = enrollment.expires_at
+      ? new Date(enrollment.expires_at).toLocaleDateString()
+      : 'Not set yet';
+
+    const analyticsBtn = document.getElementById('analyticsBtn');
+    const lockedNote = document.getElementById('analyticsLockedNote');
+    if (enrollment.status === 'active') {
+      analyticsBtn.classList.remove('disabled');
+      lockedNote.style.display = 'none';
+    } else {
+      analyticsBtn.classList.add('disabled');
+      analyticsBtn.removeAttribute('href');
+      lockedNote.style.display = 'block';
+    }
+
+    const { data: progress } = await client
+      .from('client_clusters')
+      .select('*, clusters(name, level, price_mwk, sort_order)')
+      .eq('user_id', currentUserId)
+      .order('cluster_id', { ascending: true });
+
+    // RLS only returns resources for clusters this client has actually unlocked.
+    const { data: resources } = await client
+      .from('cluster_resources')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    const resourcesByCluster = {};
+    (resources || []).forEach(r => {
+      if (!resourcesByCluster[r.cluster_id]) resourcesByCluster[r.cluster_id] = [];
+      resourcesByCluster[r.cluster_id].push(r);
+    });
+
+    const listEl = document.getElementById('clusterList');
+    listEl.innerHTML = '';
+
+    (progress || []).forEach(row => {
+      const c = row.clusters;
+      const wrap = document.createElement('div');
+
+      let actionHtml = '';
+      if (row.status === 'pending_payment') {
+        actionHtml = `<button class="cluster-pay-btn" onclick="openModal(${row.cluster_id}, '${c.name.replace(/'/g, "\\'")}')">Submit Payment</button>`;
+      }
+
+      const clusterResources = resourcesByCluster[row.cluster_id] || [];
+      let resourcesHtml = '';
+      if ((row.status === 'approved' || row.status === 'completed') && clusterResources.length > 0) {
+        const items = clusterResources.map(r => `
+          <a href="${r.url}" target="_blank" rel="noopener" class="resource-item">
+            <span class="resource-icon">↓</span>
+            <span>
+              <span class="resource-title">${r.title}</span>
+              ${r.description ? `<span class="resource-desc">${r.description}</span>` : ''}
+            </span>
+          </a>
+        `).join('');
+        resourcesHtml = `<div class="cluster-resources">${items}</div>`;
+      }
+
+      const div = document.createElement('div');
+      div.className = 'cluster-row';
+      div.innerHTML = `
+        <div class="cluster-row-left">
+          <div class="cluster-index">${c.sort_order}</div>
+          <div>
+            <div class="cluster-name">${c.name}</div>
+            <div class="cluster-level">${c.level} · MWK ${c.price_mwk.toLocaleString()}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span class="status-badge status-${row.status}">${fmtStatus(row.status)}</span>
+          ${actionHtml}
+        </div>
+      `;
+      wrap.appendChild(div);
+      if (resourcesHtml) wrap.insertAdjacentHTML('beforeend', resourcesHtml);
+      listEl.appendChild(wrap);
+    });
+
+    updateCertificateStatus(progress || []);
+  }
+
+  function updateCertificateStatus(progress) {
+    const total = progress.length;
+    const completed = progress.filter(r => r.status === 'completed').length;
+    const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    document.getElementById('certProgressText').textContent = completed + ' of ' + total + ' clusters completed';
+    document.getElementById('certProgressFill').style.width = pct + '%';
+
+    const eligible = total > 0 && completed === total;
+    document.getElementById('certLocked').style.display = eligible ? 'none' : 'block';
+    document.getElementById('certUnlocked').style.display = eligible ? 'block' : 'none';
+  }
+
+  function handleDownloadCertificate() {
+    const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    downloadCertificate(currentFullName, currentPlan, dateStr);
+  }
+
+  document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const pw = document.getElementById('newPassword').value;
+    const confirm = document.getElementById('confirmPassword').value;
+    const msg = document.getElementById('passwordMsg');
+
+    if (pw.length < 6) { msg.textContent = 'Password must be at least 6 characters.'; msg.style.color = '#B8455A'; return; }
+    if (pw !== confirm) { msg.textContent = "Passwords don't match."; msg.style.color = '#B8455A'; return; }
+
+    const client = getSupabaseClient();
+    const { error } = await client.auth.updateUser({ password: pw });
+    if (error) { msg.textContent = error.message; msg.style.color = '#B8455A'; return; }
+
+    msg.textContent = 'Password updated.';
+    msg.style.color = '#1F9D5C';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+  });
+
+  loadDashboard();
+</script>
+
+</body>
+</html>
