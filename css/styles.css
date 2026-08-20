@@ -701,6 +701,39 @@ section { position: relative; z-index: 2; }
 .pay-next-steps.active { display: block; }
 .pay-next-steps strong { color: #0B1E3D; }
 
+/* ============ NOTIFY BUTTONS (WhatsApp / Email) — reused across the site ============ */
+.notify-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.notify-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #FFFFFF !important;
+  transition: transform 0.2s ease;
+}
+.notify-btn:hover { transform: translateY(-1px); }
+.notify-btn::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #FFFFFF; }
+.notify-whatsapp { background: #1FAA59; }
+.notify-email { background: #2456DB; }
+
+.notify-card { border-left: 3px solid #DB9E24; }
+.notify-text { font-size: 13px; color: #3A4560; line-height: 1.5; margin-bottom: 16px; }
+
+.cluster-notify {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 6px 0 4px 46px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: rgba(219,158,36,0.06);
+}
+.cluster-notify span { font-size: 12px; color: #6B7690; font-weight: 600; }
+
 .form-submit {
   width: 100%;
   background: #0B1E3D;

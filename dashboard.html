@@ -49,6 +49,12 @@
       </div>
     </div>
 
+    <div class="dash-card glass prism-ring notify-card" id="pendingNotifyCard" style="display:none;margin-bottom:32px;">
+      <div class="dash-card-label">Speed Up Your Approval</div>
+      <div class="notify-text">Sent your payment already? Notify Trader Fatsa directly and your enrollment can be approved sooner.</div>
+      <div class="notify-btns" id="pendingNotifyBtns"></div>
+    </div>
+
     <div class="dash-card glass prism-ring">
       <div class="dash-card-label">Cluster Progress</div>
       <div class="cluster-list" id="clusterList"></div>
@@ -89,7 +95,7 @@
 
 <!-- Payment submission modal -->
 <div class="modal-overlay" id="payModal">
-  <div class="modal-box">
+  <div class="modal-box" id="payModalForm">
     <div class="modal-title" id="payModalTitle">Submit Payment</div>
     <div class="modal-sub">Enter the details for the payment you've made for this cluster.</div>
     <div class="form-group">
@@ -105,6 +111,12 @@
       <button class="form-submit" onclick="submitClusterPayment()">Submit</button>
     </div>
   </div>
+  <div class="modal-box" id="payModalSuccess" style="display:none;">
+    <div class="modal-title">Payment Submitted ✓</div>
+    <div class="modal-sub">It's now awaiting approval. Notify Trader Fatsa directly to get it reviewed sooner:</div>
+    <div class="notify-btns" id="successNotifyBtns" style="margin-bottom:20px;"></div>
+    <button class="btn-secondary" style="width:100%;" onclick="closeModal()">Done</button>
+  </div>
 </div>
 
 <script src="js/supabase-config.js"></script>
@@ -113,6 +125,7 @@
 <script>
   let currentUserId = null;
   let activeClusterId = null;
+  let activeClusterName = '';
   let currentFullName = '';
   let currentPlan = '';
 
@@ -120,15 +133,32 @@
     return s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
 
+  function buildNotifyButtons(contextPhrase) {
+    const waText = encodeURIComponent(
+      "Hi Trader Fatsa, I've made a payment for " + contextPhrase + " on HB Capital. Please review and approve it."
+    );
+    const mailBody = encodeURIComponent(
+      "Hi Trader Fatsa,\n\nI've made a payment for " + contextPhrase + " on HB Capital. Please review and approve it.\n\nThank you."
+    );
+    return `
+      <a href="https://wa.me/265883558887?text=${waText}" target="_blank" rel="noopener" class="notify-btn notify-whatsapp">WhatsApp</a>
+      <a href="mailto:fatsaninkhono01@gmail.com?subject=Payment%20Notification&body=${mailBody}" class="notify-btn notify-email">Email</a>
+    `;
+  }
+
   function openModal(clusterId, clusterName) {
     activeClusterId = clusterId;
+    activeClusterName = clusterName;
     document.getElementById('payModalTitle').textContent = 'Submit Payment — ' + clusterName;
     document.getElementById('modalMethod').value = '';
     document.getElementById('modalReference').value = '';
+    document.getElementById('payModalForm').style.display = 'block';
+    document.getElementById('payModalSuccess').style.display = 'none';
     document.getElementById('payModal').classList.add('active');
   }
   function closeModal() {
     document.getElementById('payModal').classList.remove('active');
+    loadDashboard();
   }
 
   async function submitClusterPayment() {
@@ -144,8 +174,10 @@
     });
 
     if (error) { alert('Something went wrong: ' + error.message); return; }
-    closeModal();
-    loadDashboard();
+
+    document.getElementById('payModalForm').style.display = 'none';
+    document.getElementById('payModalSuccess').style.display = 'block';
+    document.getElementById('successNotifyBtns').innerHTML = buildNotifyButtons(activeClusterName);
   }
 
   async function loadDashboard() {
@@ -201,6 +233,16 @@
       lockedNote.style.display = 'block';
     }
 
+    const pendingCard = document.getElementById('pendingNotifyCard');
+    if (enrollment.status === 'pending') {
+      pendingCard.style.display = 'block';
+      document.getElementById('pendingNotifyBtns').innerHTML = buildNotifyButtons(
+        'my ' + enrollment.plan + ' enrollment'
+      );
+    } else {
+      pendingCard.style.display = 'none';
+    }
+
     const { data: progress } = await client
       .from('client_clusters')
       .select('*, clusters(name, level, price_mwk, sort_order)')
@@ -246,6 +288,11 @@
         resourcesHtml = `<div class="cluster-resources">${items}</div>`;
       }
 
+      let notifyHtml = '';
+      if (row.status === 'submitted') {
+        notifyHtml = `<div class="cluster-notify"><span>Notify Trader Fatsa to speed this up:</span>${buildNotifyButtons(c.name)}</div>`;
+      }
+
       const div = document.createElement('div');
       div.className = 'cluster-row';
       div.innerHTML = `
@@ -262,6 +309,7 @@
         </div>
       `;
       wrap.appendChild(div);
+      if (notifyHtml) wrap.insertAdjacentHTML('beforeend', notifyHtml);
       if (resourcesHtml) wrap.insertAdjacentHTML('beforeend', resourcesHtml);
       listEl.appendChild(wrap);
     });
