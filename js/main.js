@@ -141,8 +141,9 @@ if (registerForm) {
     }
 
     const userId = signUpData.user ? signUpData.user.id : null;
+    const isAdmin = email.toLowerCase() === 'fatsaninkhono01@gmail.com';
 
-    if (userId) {
+    if (userId && !isAdmin) {
       // 2. Create the enrollment record (status starts as 'pending' until admin approves)
       const { error: enrollError } = await client.from('enrollments').insert([{
         user_id: userId,
@@ -170,6 +171,6 @@ if (registerForm) {
       return;
     }
 
-    window.location.href = 'dashboard.html';
+    window.location.href = isAdmin ? 'admin.html' : 'dashboard.html';
   });
 }
