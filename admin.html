@@ -200,10 +200,20 @@
     document.getElementById('userEmail').textContent = session.user.email;
 
     const client = getSupabaseClient();
-    const { data: enrollments } = await client
-      .from('enrollments')
-      .select('*, profiles(full_name, phone)')
-      .order('created_at', { ascending: false });
+
+    // Fetch enrollments and profiles separately and merge in the browser —
+    // there's no direct foreign key between these two tables (both reference
+    // auth.users independently), so PostgREST can't auto-join them.
+    const [{ data: enrollments, error: enrollError }, { data: profiles, error: profileError }] = await Promise.all([
+      client.from('enrollments').select('*').order('created_at', { ascending: false }),
+      client.from('profiles').select('*')
+    ]);
+
+    if (enrollError) console.error('Enrollments query error:', enrollError);
+    if (profileError) console.error('Profiles query error:', profileError);
+
+    const profileById = {};
+    (profiles || []).forEach(p => { profileById[p.id] = p; });
 
     const body = document.getElementById('enrollmentsBody');
     const empty = document.getElementById('enrollmentsEmpty');
@@ -216,7 +226,7 @@
     empty.style.display = 'none';
 
     enrollments.forEach(en => {
-      const profile = en.profiles || {};
+      const profile = profileById[en.user_id] || {};
       const tr = document.createElement('tr');
 
       let actionHtml = '';
