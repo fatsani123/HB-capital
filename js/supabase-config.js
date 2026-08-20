@@ -13,5 +13,5 @@
 // that key bypasses Row Level Security entirely and must stay private,
 // used only from a secure server (e.g. inside the Macro Intelligence dashboard's backend).
 
-window.SUPABASE_URL = 'PASTE_YOUR_SUPABASE_PROJECT_URL_HERE';
-window.SUPABASE_ANON_KEY = 'PASTE_YOUR_SUPABASE_ANON_PUBLIC_KEY_HERE';
+window.SUPABASE_URL = 'https://ppdwkovceuzlvvxzhyli.supabase.co';
+window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwZHdrb3ZjZXV6bHZ2eHpoeWxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExOTI0MTMsImV4cCI6MjA5Njc2ODQxM30.4Fqf58BSTBUL-5rznGP68U0yJmvs1Pu5HMGOffQEsKY';
